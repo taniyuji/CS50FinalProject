@@ -1,35 +1,33 @@
-import { groundBottomYPos, groundTopYPos, wallLeftXPos, wallRightXPos } from "./stageSetter.js";
+import { groundBottomYPos, groundCenterXPos, groundTopYPos, wallLeftXPos, wallRightXPos } from "./stageSetter.js";
 import getKeyState, { keys } from "./getInput.js";
-import { DecreaseLife, life } from "./HPController.js";
+import { DecreaseLife, playerLife } from "./HPController.js";
 
 const canvas = document.getElementById("maincanvas");
 const image1 = document.getElementById("playerImage1");
 const image2 = document.getElementById("playerImage2");
 const ctx = canvas.getContext("2d");
 
-var playerLife = 5;
 var playerWidth = 60;
 var playerHeight = 15;
 var addWidth = 10;
 var addHeight = 10;
 var jumpLimit = 50;
 var jumpAmount = 0;
-var moveSpeed = 6;
-var jumpSpeed = -3;
+var moveSpeed = 8;
+var jumpSpeed = -4;
 var gravity = 3;
 var climbingSpeed = 2;
 var onGroundYPos = groundBottomYPos - playerHeight;
 var onSealingPos = groundTopYPos;
 var leftMoveLimitPos = wallLeftXPos;
 var rightMoveLimitPos = wallRightXPos - playerWidth;
-var isHitBullet = false;
 
-export var playerRightPos = x + playerWidth;
-export var playerLeftPos = x;
-export var playerFootPos = y + playerHeight;
-export var playerHeadPos = y;
+export var playerRightXPos = x + playerWidth;
+export var playerLeftXPos = x;
+export var playerFootYPos = y + playerHeight;
+export var playerHeadYPos = y;
 
-var PlayerHorizontalState = {
+var PlayerHorizontalStates = {
     Idle: 1,
     MovingLeft: 2,
     MovingRight: 3,
@@ -37,8 +35,7 @@ var PlayerHorizontalState = {
     RightWallJumping: 5,
     ShootingStar: 6,
 }
-
-var horizontalState = PlayerHorizontalState.Idle;
+var playerHorizontalState = PlayerHorizontalStates.Idle;
 
 export var PlayerVerticalStates = {
     OnGround: 1,
@@ -48,11 +45,22 @@ export var PlayerVerticalStates = {
     ClimbingRight: 5,
     OnSealing: 6,
 }
-
 export var playerVerticalState = PlayerVerticalStates.OnGround;
 
-var x = wallRightXPos - playerWidth;
+var PlayerBodyStates = {
+    isDamaged: 0,
+    isInvincible: 1,
+    isNormal: 2,
+}
+var playerBodyState = PlayerBodyStates.isNormal;
+
+var x = groundCenterXPos;
 var y = groundBottomYPos - playerHeight;
+
+var invincibleTime = 70;
+var invincibleTimeCounter = 0;
+
+var isSetImage = true;
 
 export default function movePlayer() {
 
@@ -80,20 +88,17 @@ export default function movePlayer() {
         height += addHeight;
     }
 
-    if (isHitBullet) {
-        DecreaseLife();
-        isHitBullet = false;
-        console.log("hitBullet : " + playerLife);
-    }
+    DamagedBehavior();
+    InvincibleBehavior();
 
-   if(life > 0) ctx.drawImage(image, x, y, width, height);
+    if (isSetImage) ctx.drawImage(image, x, y, width, height);
 }
 
 function UpdateExportData() {
-    playerRightPos = x + playerWidth;
-    playerLeftPos = x;
-    playerFootPos = y + playerHeight;
-    playerHeadPos = y;
+    playerRightXPos = x + playerWidth;
+    playerLeftXPos = x;
+    playerFootYPos = y + playerHeight;
+    playerHeadYPos = y;
 }
 
 function JudgeIdleAndFloatingState() {
@@ -105,27 +110,27 @@ function JudgeIdleAndFloatingState() {
             || playerVerticalState == PlayerVerticalStates.OnSealing))
         playerVerticalState = PlayerVerticalStates.Floating;
 
-    horizontalState = PlayerHorizontalState.Idle;
+    playerHorizontalState = PlayerHorizontalStates.Idle;
 }
 
 function JudgeRightAllowState() {
     if (!getKeyState(keys.rightAllow)) return;
     if (playerVerticalState == PlayerVerticalStates.ClimbingLeft) return;
-    if (horizontalState == PlayerHorizontalState.LeftWallJumping) return;
-    if (horizontalState == PlayerHorizontalState.RightWallJumping) return;
-    if (horizontalState == PlayerHorizontalState.ShootingStar) return;
+    if (playerHorizontalState == PlayerHorizontalStates.LeftWallJumping) return;
+    if (playerHorizontalState == PlayerHorizontalStates.RightWallJumping) return;
+    if (playerHorizontalState == PlayerHorizontalStates.ShootingStar) return;
 
-    horizontalState = PlayerHorizontalState.MovingRight;
+    playerHorizontalState = PlayerHorizontalStates.MovingRight;
 }
 
 function JudgeLeftAllowState() {
     if (!getKeyState(keys.leftAllow)) return;
     if (playerVerticalState == PlayerVerticalStates.ClimbingRight) return;
-    if (horizontalState == PlayerHorizontalState.LeftWallJumping) return;
-    if (horizontalState == PlayerHorizontalState.RightWallJumping) return;
-    if (horizontalState == PlayerHorizontalState.ShootingStar) return;
+    if (playerHorizontalState == PlayerHorizontalStates.LeftWallJumping) return;
+    if (playerHorizontalState == PlayerHorizontalStates.RightWallJumping) return;
+    if (playerHorizontalState == PlayerHorizontalStates.ShootingStar) return;
 
-    horizontalState = PlayerHorizontalState.MovingLeft;
+    playerHorizontalState = PlayerHorizontalStates.MovingLeft;
 }
 
 function JudgeSpaceState() {
@@ -134,11 +139,11 @@ function JudgeSpaceState() {
     if (playerVerticalState == PlayerVerticalStates.Floating) return;
 
     if (playerVerticalState == PlayerVerticalStates.ClimbingLeft)
-        horizontalState = PlayerHorizontalState.LeftWallJumping;
+        playerHorizontalState = PlayerHorizontalStates.LeftWallJumping;
     else if (playerVerticalState == PlayerVerticalStates.ClimbingRight)
-        horizontalState = PlayerHorizontalState.RightWallJumping;
+        playerHorizontalState = PlayerHorizontalStates.RightWallJumping;
     else if (playerVerticalState == PlayerVerticalStates.OnSealing) {
-        horizontalState = PlayerHorizontalState.ShootingStar;
+        playerHorizontalState = PlayerHorizontalStates.ShootingStar;
     }
 
     playerVerticalState = PlayerVerticalStates.Jumping;
@@ -148,9 +153,9 @@ function JudgeUpArrowState() {
     if (!getKeyState(keys.upAllow)) return;
     if (playerVerticalState == PlayerVerticalStates.Jumping) return;
     if (playerVerticalState == PlayerVerticalStates.Floating) return;
-    if (horizontalState == PlayerHorizontalState.LeftWallJumping) return;
-    if (horizontalState == PlayerHorizontalState.RightWallJumping) return;
-    if (horizontalState == PlayerHorizontalState.ShootingStar) return;
+    if (playerHorizontalState == PlayerHorizontalStates.LeftWallJumping) return;
+    if (playerHorizontalState == PlayerHorizontalStates.RightWallJumping) return;
+    if (playerHorizontalState == PlayerHorizontalStates.ShootingStar) return;
 
     if (JudgeIsOnSealing())
         playerVerticalState = PlayerVerticalStates.OnSealing;
@@ -170,10 +175,10 @@ function OnGroundBehavior() {
 }
 
 function RunBehavior() {
-    if (horizontalState != PlayerHorizontalState.MovingLeft
-        && horizontalState != PlayerHorizontalState.MovingRight) return;
+    if (playerHorizontalState != PlayerHorizontalStates.MovingLeft
+        && playerHorizontalState != PlayerHorizontalStates.MovingRight) return;
 
-    if (horizontalState == PlayerHorizontalState.MovingRight) {
+    if (playerHorizontalState == PlayerHorizontalStates.MovingRight) {
         x = judgeIsRightMoveLimit() ?
             rightMoveLimitPos : x + moveSpeed;
     } else {
@@ -208,14 +213,14 @@ function JumpingBehaviorAndJudgeFloatingState() {
     if (playerVerticalState != PlayerVerticalStates.Jumping) return;
 
     if (jumpAmount < jumpLimit
-        && horizontalState != PlayerHorizontalState.ShootingStar) {
+        && playerHorizontalState != PlayerHorizontalStates.ShootingStar) {
         y += jumpSpeed;
         jumpAmount += -jumpSpeed;
 
-        if (horizontalState == PlayerHorizontalState.LeftWallJumping) {
+        if (playerHorizontalState == PlayerHorizontalStates.LeftWallJumping) {
             x += moveSpeed;
         }
-        else if (horizontalState == PlayerHorizontalState.RightWallJumping) {
+        else if (playerHorizontalState == PlayerHorizontalStates.RightWallJumping) {
             x += - moveSpeed;
         }
     }
@@ -228,19 +233,19 @@ function JumpingBehaviorAndJudgeFloatingState() {
 function FloatingBehaviorAndJudgeOnGroundState() {
     if (playerVerticalState != PlayerVerticalStates.Floating) return;
 
-    y = horizontalState == PlayerHorizontalState.ShootingStar
+    y = playerHorizontalState == PlayerHorizontalStates.ShootingStar
         ? y + 7 : y + gravity;
 
-    if (horizontalState == PlayerHorizontalState.LeftWallJumping) {
+    if (playerHorizontalState == PlayerHorizontalStates.LeftWallJumping) {
         x += moveSpeed;
     }
-    else if (horizontalState == PlayerHorizontalState.RightWallJumping) {
+    else if (playerHorizontalState == PlayerHorizontalStates.RightWallJumping) {
         x += - moveSpeed;
     }
 
     if (judgeIsOnGround()) {
         playerVerticalState = PlayerVerticalStates.OnGround;
-        horizontalState = PlayerHorizontalState.Idle;
+        playerHorizontalState = PlayerHorizontalStates.Idle;
     }
 }
 
@@ -261,29 +266,74 @@ function judgeIsRightMoveLimit() {
 }
 
 export function JudgeIsHitBullet(bulletRight, bulletLeft, bulletBottom, bulletTop) {
+    if (playerBodyState != PlayerBodyStates.isNormal) return;
     //console.log("judgeIsHitBullet" + "br:" + bulletRight + "pl:" + playerLeftPos);
 
-    if (bulletTop > playerFootPos || bulletBottom < playerHeadPos) {
+    if (bulletTop > playerFootYPos || bulletBottom < playerHeadYPos) {
         console.log("noHit");
         return false;
     }
-    
-    if (bulletRight > playerLeftPos && playerRightPos > bulletRight)
-    {
-        console.log("bulletRight = " + bulletRight);
-        console.log("playerLeft = " + playerLeftPos);
-        isHitBullet = true;
+
+    if (bulletRight > playerLeftXPos && playerRightXPos > bulletRight) {
+        //        console.log("bulletRight = " + bulletRight);
+        //        console.log("playerLeft = " + playerLeftPos);
+        playerBodyState = PlayerBodyStates.isDamaged;
         return true;
     }
-    else if (bulletLeft < playerRightPos && playerLeftPos < bulletLeft)
-    {
-        console.log("bulletLeft = " + bulletLeft);
-        console.log("playerRight = " + playerRightPos);
-        isHitBullet = true;
+    else if (bulletLeft < playerRightXPos && playerLeftXPos < bulletLeft) {
+        //        console.log("bulletLeft = " + bulletLeft);
+        //        console.log("playerRight = " + playerRightPos);
+        playerBodyState = PlayerBodyStates.isDamaged;
         return true;
     }
-    
+
     return false;
+}
+
+export function JudgeIsHitEnemy(enemyLeft, enemyRight, enemyHead, enemyFoot) {
+    if (playerVerticalState == PlayerVerticalStates.Floating) return;
+    if (playerBodyState != PlayerBodyStates.isNormal) return;
+
+    if (enemyHead > playerFootYPos || enemyFoot < playerHeadYPos) {
+        return;
+    }
+
+    if (enemyRight > playerLeftXPos && playerRightXPos > enemyRight) {
+        playerBodyState = PlayerBodyStates.isDamaged;
+        console.log("Hit enemy");
+    }
+    else if (enemyLeft < playerRightXPos && playerLeftXPos < enemyLeft) {
+        playerBodyState = PlayerBodyStates.isDamaged;
+        console.log("hit enemy");
+    }
+}
+
+function DamagedBehavior() {
+    if (playerBodyState != PlayerBodyStates.isDamaged) return;
+
+    DecreaseLife();
+    playerBodyState = PlayerBodyStates.isInvincible;
+    console.log("decrease life");
+    if (playerLife <= 0) isSetImage = false;
+
+}
+
+function InvincibleBehavior() {
+    if (playerLife <= 0) return;
+    if (playerBodyState != PlayerBodyStates.isInvincible) return;
+
+    if (invincibleTimeCounter > invincibleTime) {
+        invincibleTimeCounter = 0;
+        playerBodyState = PlayerBodyStates.isNormal;
+        isSetImage = true;
+        return;
+    }
+
+    invincibleTimeCounter += 1;
+    //console.log(invincibleTimeCounter);
+
+    if (invincibleTimeCounter % 5 == 0)
+        isSetImage = !isSetImage;
 }
 
 function SetImage() {

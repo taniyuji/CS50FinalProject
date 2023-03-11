@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="jp">
+
+<head>
+    <meta charset="UTF-8">
+    <title>ランキング</title>
+</head>
+
+<body>
+    <div>
+        <b>順位</b>
+        <b>ユーザ名</b>
+        <b>スコア</b>
+
+        <ol>
+            {% for ranking in data %}
+            <li>  {{ranking[0]}}  {{ranking[1]}}</li>
+            {% endfor %}
+        </ol>
+    </div>
+
+    <a href="{{url_for('index')}}">ゲームに戻る</a>
+</body>
+
+</html>

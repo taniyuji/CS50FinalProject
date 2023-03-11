@@ -20,3 +20,4 @@ typing==3.10.0.0
 Werkzeug==1.0.1
 WTForms==2.3.3
 zipp==1.2.0
+mysqlclient

@@ -1,11 +1,15 @@
 <!DOCTYPE html>
 <html>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+
     <img id="playerImage1" src="{{ url_for('static', filename='Images/Player1.png') }}" style="display: none">
     <img id="playerImage2" src="{{ url_for('static', filename='Images/Player2.png') }}" style="display: none">
     <img id="groundImage" src="{{ url_for('static', filename='Images/ground.png') }}" style="display: none">
-    <img id="EnemyImage" src="{{ url_for('static', filename='Images/Enemy.png') }}" style="display: none">
+    <img id="EnemyRightImage" src="{{ url_for('static', filename='Images/EnemyRight.png') }}" style="display: none">
+    <img id="EnemyLeftImage" src="{{ url_for('static', filename='Images/EnemyLeft.png') }}" style="display: none">
     <img id="BulletImage" src="{{ url_for('static', filename='Images/Bullet.png') }}" style="display: none">
     <img id="HeartImage" src="{{ url_for('static', filename='Images/Heart.png') }}" style="display: none">
+    <img id="TitleImage" src="{{ url_for('static', filename='Images/TitleLogo.png') }}" style="display: none">
     <head>
         <meta charset="utf-8" />
         <title>Urchin Surviver</title>
@@ -15,12 +19,37 @@
                 margin: 0;
             }
             canvas{
-                background: #eee;
+                background: #c1edff;
                 display: block;
                 margin: 0 auto;
                 width:700px;
                 height:500px;
             }
+
+            .popup{
+                display: none;
+                height: 100vh;
+                width: 100%;
+                background: gray;
+                opacity: 0.9;
+                position: fixed;
+                top: 0;
+                left: 0;
+            }
+
+            .content{
+                background: #fff;
+                padding: 30px;
+                width: 50%;
+            }
+
+            .show{
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            
         </style>
     </head>
     <body>
@@ -31,5 +60,27 @@
         <script type="module" src="{{url_for('static', filename='js/stageSetter.js')}}" alt="Responsive js"></script>
         <script type="module" src="{{url_for('static', filename='js/getInput.js')}}" alt="Responsive js"></script>
         <script type="module" src="{{url_for('static', filename='js/HPController.js')}}" alt="Responsive js"></script>
+        <script type="module" src="{{url_for('static', filename='js/EnemyMover.js')}}" alt="Responsive js"></script>
+        <script type="module" src="{{url_for('static', filename='js/EnemyMover2.js')}}" alt="Responsive js"></script>
+        <script type="module" src="{{url_for('static', filename='js/ScoreManager.js')}}" alt="Responsive js"></script>
     </body>
+
+    <div class="popup">
+        <div class="content">
+            <form action="/register">
+                <div>
+                    <div>You Ranked In!!</div>
+                    <div>Your score : 
+                        <div id="score_show"></div>
+                    </div>
+                    <input type="hidden" id="score" name="playerScore">
+                    <input type="text" name="playerName" value="input your name!">   
+                </div>
+    
+                <button type="submit" formmethod="POST">Register</button>
+            </form>
+            
+            <button id="close_register">Close</button>
+        </div>
+    </div>
 </html>

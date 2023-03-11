@@ -7,6 +7,7 @@ export var groundTopYPos = -25 + groundHeight;
 export var groundBottomYPos = 143;
 export var wallLeftXPos = wallWidth;
 export var wallRightXPos = 970;
+export var groundCenterXPos = groundWidth / 3;
 
 const canvas = document.getElementById("maincanvas");
 const ctx = canvas.getContext("2d");
